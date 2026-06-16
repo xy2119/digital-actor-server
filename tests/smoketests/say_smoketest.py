@@ -1,7 +1,7 @@
 """Smoketest: drive the new TTS entry points.
 
 1. Spawns ``metahuman_actor.server`` as a subprocess (same pattern as
-   ``example_tts_smoketest.py``).
+   ``tts_smoketest.py``).
 2. Sends a WebSocket ``{"type": "say", "text": "..."}`` and assembles
    the streamed PCM into ``out_say_ws.wav``.
 3. POSTs the same text to ``/tts`` and saves the response to
@@ -13,7 +13,7 @@ Prereqs:
 
 Usage::
 
-    uv run python example_say_smoketest.py
+    uv run python tests/smoketests/say_smoketest.py
 """
 from __future__ import annotations
 
@@ -33,7 +33,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-ROOT = Path(__file__).resolve().parent
+ROOT = Path(__file__).resolve().parents[2]  # repo root (tests/smoketests/<this>)
 DEFAULT_PORT = 8788
 DEFAULT_HTTP_PORT = 8789
 DEFAULT_TEXT = "Hello from the say smoketest."

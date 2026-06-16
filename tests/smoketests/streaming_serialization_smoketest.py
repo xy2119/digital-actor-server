@@ -10,7 +10,7 @@ was playing hang and then jump to the new line. After the fix, the scene's
 for line 2.
 
 Spawns ``metahuman_actor.server`` as a subprocess (same pattern as
-``example_tts_smoketest.py``), drives the scenario, and writes both lines'
+``tts_smoketest.py``), drives the scenario, and writes both lines'
 audio to separate WAVs so a human can also listen for smoothness.
 
 Prereqs:
@@ -19,7 +19,7 @@ Prereqs:
 
 Usage::
 
-    uv run python example_streaming_serialization_test.py
+    uv run python tests/smoketests/streaming_serialization_smoketest.py
 """
 
 from __future__ import annotations
@@ -39,7 +39,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-ROOT = Path(__file__).resolve().parent
+ROOT = Path(__file__).resolve().parents[2]  # repo root (tests/smoketests/<this>)
 DEFAULT_PORT = 8788
 
 

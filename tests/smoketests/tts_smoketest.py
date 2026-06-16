@@ -11,7 +11,7 @@ Prereqs (set in your environment or .env):
 
 Usage::
 
-    uv run python example_tts_smoketest.py
+    uv run python tests/smoketests/tts_smoketest.py
 """
 
 from __future__ import annotations
@@ -31,7 +31,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-ROOT = Path(__file__).resolve().parent
+ROOT = Path(__file__).resolve().parents[2]  # repo root (tests/smoketests/<this>)
 DEFAULT_PORT = 8788
 DEFAULT_OUTPUT = ROOT / "out_opening.wav"
 
