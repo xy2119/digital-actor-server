@@ -239,7 +239,7 @@ async def test_respond_history_isolated_per_character(multi_stage):
     await multi_stage.load_scenario("tavern")
 
     def make_recorder(cid):
-        async def _rwh(text, world_state, emotions=None, request_followup_hint=False):
+        async def _rwh(text, world_state, emotions=None, request_followup_hint=False, deliver_after=None):
             multi_stage._characters[cid].actor.history.add_message("Player", text)
             return DialogueLine(name=cid, text="ok", line_id=cid), None
         return _rwh

@@ -44,6 +44,58 @@ uv run python -m metahuman_actor.game_driven.server --port 8788 --llm cerebras/g
 
 `--langfuse-local` reads prompts and scenarios from `.langfuse_prompts/` on disk rather than remote Langfuse.
 
+## Listener mode: which clip bank, matched how
+
+With `--listener`, `respond` returns a **facial reaction clip** instead of dialogue (no TTS). `--reaction-match` picks the bank and the matching strategy:
+
+| Mode | Bank | Channels | Matched by |
+|---|---|---|---|
+| `context` | Express4D dataset (851 captioned clips) | 52 ARKit blendshapes + head/eye YPR (61) | LLM bridge → situation + function, then MaxSim situation↔usage-contexts + rerank |
+| `caption_llm` | same | same | LLM bridge → function filter, then LLM picks by facial caption |
+| `caption_ctrl` | **CTRL rig-control bank** (9 clips) | ~251 `CTRL_expressions_*` + head YPR (254) | LLM picks by **video caption** over the whole bank (no function routing) |
+
+`caption_ctrl` is the high-fidelity path: the frames are the raw MetaHuman Animator solve of a source video, so the ARKit projection is skipped entirely. Frames go out tagged `schema: "metahuman_ctrl_v1"`, which is what makes the Unreal client write the curves straight into `AnimNode_RigLogic` instead of through its ARKit mapping pose.
+
+```bash
+run-game-server.bat                                  # caption_ctrl (default)
+run-game-server.bat --reaction-match caption_llm     # back to the ARKit bank
+```
+
+Sources it reads (`metahuman_actor/reaction/ctrl_bank.py`):
+
+| What | Where | Override |
+|---|---|---|
+| Clip data | `IconicDigitalActor/Extras/WaitingClipsCTRL/*_ctrl.json` in the Unreal plugin — complete wire frames written by `wire_from_ctrl.py`; forwarded as-is with only `actor_name` / `clip_id` / `caption` / `function` / `duration` patched | `ICONIC_CTRL_WIRE_DIR` |
+| Captions | `<Express4D dataset>/video_summaries.txt`, one `<video>.mp4, <caption>` line per clip | `EXPRESS4D_DATASET` |
+| Which clips | all `*.json` in the wire folder | `ICONIC_CTRL_CLIP_FILTER` |
+
+`ICONIC_CTRL_CLIP_FILTER` is a comma-separated substring allowlist over clip stems — for evaluating one capture session out of a folder that has accumulated several, without moving files. `run-game-server.bat` ships pointed at the Unreal plugin's `Extras/WaitingClipsCTRL` and filtered to `MySlate_7`; clear the line to use the whole folder.
+
+Clip stems and caption keys are allowed to diverge: `caption_key()` drops the provenance tokens the export pipeline appends (`_ctrl`, `_depth`) and rewrites a `_segNN` piece to `_NN`, so `MySlate_7_seg01_depth_ctrl.json` finds the `MySlate_7_01.mp4` caption. A clip whose caption cannot be found still enters the pool — the LLM then picks it on an empty line, which is why the loader warns and names the key it looked for.
+
+Two properties of this bank to keep in mind:
+
+- **No taxonomy.** These clips carry no function / valence / intensity / appropriateness tags, so there is nothing to route or rerank on — the whole bank is the candidate pool. Anti-repeat is shared with the other modes.
+- **Long takes.** 6 s to 104 s, mostly over 30 s, versus a few seconds for Express4D. On the client, pair the mode with `PostReactionMode = Reverse Ping-Pong` (replays the finished take backwards, then forwards) instead of a waiting-clip bank — see `IconicDigitalActor/Extras/CTRL-Reaction-Mode.md` in the Unreal project.
+
+The mode is also switchable at runtime over the existing `set_reaction_match_mode` frame, so no client rebuild is needed to A/B it.
+
+### Speaking listener (`--listener-speech`)
+
+By default a listener reaction *replaces* dialogue — the NPC answers with a face and no words. With `--listener-speech` a `respond` produces both: the reaction frame goes out first, then the normal LLM reply is generated, spoken by TTS and turned into mouth animation by Audio2Face.
+
+The two do not fight over the face, because they own different parts of it:
+
+| | Driven by |
+|---|---|
+| Jaw, mouth, tongue | Audio2Face, for the duration of the line |
+| Brows, eyes, cheeks, nose | the CTRL reaction clip, throughout |
+| Head yaw/pitch/roll | the CTRL reaction clip, throughout |
+
+Client side that split is enforced in `FAnimNode_IconicFaceReaction`: it sits downstream of the ARKit mapping pose that converts ACE's output into rig controls, so at full weight it would otherwise overwrite the lipsync with the clip's own closed mouth. `bMaskMouthWhileSpeaking` fades its authority over the mouth region as the component's `SpeechMouthWeight` rises (ramped over `MouthHandoverSeconds`, so the jaw is handed over rather than snapped). The reaction clip also keeps playing — and keeps ping-ponging — through the line instead of standing down.
+
+Reaction first, speech second, on purpose: the face should already be reacting when the voice starts.
+
 ## Testing
 
 ```bash

@@ -76,7 +76,7 @@ async def test_respond_with_followup_emits_hint(server, monkeypatch):
     ws = FakeWS()
     await server._handle_message({"type": "load_scenario", "name": "tavern"}, ws)
 
-    async def fake_respond_with_hint(text, world_state, emotions=None, request_followup_hint=False):
+    async def fake_respond_with_hint(text, world_state, emotions=None, request_followup_hint=False, deliver_after=None):
         from digital_actor.dialogue import DialogueLine
 
         line = DialogueLine(name="Zeek", text="Hi.", line_id="L1")
@@ -112,7 +112,7 @@ async def test_respond_npc_is_case_insensitive(server, monkeypatch):
     ws = FakeWS()
     await server._handle_message({"type": "load_scenario", "name": "tavern"}, ws)
 
-    async def fake_respond_with_hint(text, world_state, emotions=None, request_followup_hint=False):
+    async def fake_respond_with_hint(text, world_state, emotions=None, request_followup_hint=False, deliver_after=None):
         from digital_actor.dialogue import DialogueLine
 
         return DialogueLine(name="Zeek", text="Hi.", line_id="L1"), None

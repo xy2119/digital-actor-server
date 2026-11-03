@@ -17,11 +17,12 @@ dev = [
 ]
 
 [tool.uv.sources]
-llm_lib = { git = "ssh://git@github.com/iconic-games/iconic-python-lib", subdirectory = "packages/llm_lib" }
-tts_lib = { git = "ssh://git@github.com/iconic-games/iconic-python-lib", subdirectory = "packages/tts_lib" }
-timer_stack = { git = "ssh://git@github.com/iconic-games/iconic-python-lib", subdirectory = "packages/timer_stack" }
-app-logging = { git = "ssh://git@github.com/iconic-games/iconic-python-lib", subdirectory = "packages/app_logging" }
-langfuse-utils = { git = "ssh://git@github.com/iconic-games/iconic-python-lib", subdirectory = "packages/langfuse_utils" }
+# HTTPS works with Windows Git Credential Manager; SSH needs a local key + known_hosts.
+llm_lib = { git = "https://github.com/iconic-games/iconic-python-lib", subdirectory = "packages/llm_lib" }
+tts_lib = { git = "https://github.com/iconic-games/iconic-python-lib", subdirectory = "packages/tts_lib" }
+timer_stack = { git = "https://github.com/iconic-games/iconic-python-lib", subdirectory = "packages/timer_stack" }
+app-logging = { git = "https://github.com/iconic-games/iconic-python-lib", subdirectory = "packages/app_logging" }
+langfuse-utils = { git = "https://github.com/iconic-games/iconic-python-lib", subdirectory = "packages/langfuse_utils" }
 
 [build-system]
 requires = ["hatchling"]

@@ -11,6 +11,7 @@ own generation — only one character generates at a time.
 from __future__ import annotations
 
 import json
+from collections.abc import Awaitable
 from dataclasses import dataclass
 
 from app_logging import get_logger
@@ -256,6 +257,11 @@ class GameDrivenStage(SingleSceneStage):
 
     # --- routing ---
 
+    def resolve_display_name(self, npc: str | None) -> str:
+        """Resolve an inbound npc id to the actor's display name (wire actor_name)."""
+        cid = self._resolve_npc(npc)
+        return self._characters[cid].actor.name
+
     async def respond(
         self,
         npc: str | None,
@@ -263,6 +269,7 @@ class GameDrivenStage(SingleSceneStage):
         world_state: dict | None,
         emotions: list[str] | None = None,
         request_followup_hint: bool = False,
+        deliver_after: Awaitable | None = None,
     ) -> tuple[str, FollowupHint | None]:
         cid = self._resolve_npc(npc)
         self._active_character = cid
@@ -271,6 +278,7 @@ class GameDrivenStage(SingleSceneStage):
             world_state,
             emotions=emotions,
             request_followup_hint=request_followup_hint,
+            deliver_after=deliver_after,
         )
         return cid, hint
 

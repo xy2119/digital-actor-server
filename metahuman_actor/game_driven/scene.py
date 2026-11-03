@@ -6,6 +6,7 @@ behaviour. Lines are produced only when the game calls respond()/trigger().
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Awaitable
 from dataclasses import dataclass
 
 from app_logging import get_logger
@@ -87,7 +88,12 @@ class GameDrivenScene(BaseScene):
         world_state: dict | None,
         emotions: list[str] | None = None,
         request_followup_hint: bool = False,
+        deliver_after: Awaitable | None = None,
     ) -> tuple[DialogueLine, "FollowupHint | None"]:
+        """deliver_after: if given, awaited after the LLM reply is generated and
+        before it is delivered, so the caller can run other work (e.g. the
+        listener's reaction clip) concurrently with generation but still send
+        it first."""
         if not text or not text.strip():
             raise ValueError("respond: empty text")
         async with self._response_lock:
@@ -97,7 +103,9 @@ class GameDrivenScene(BaseScene):
                 world_state=world_state,
                 trigger_prompt=None,
             )
-            line = await self._generate_and_deliver(prompt_info, emotions)
+            line = await self._generate_and_deliver(
+                prompt_info, emotions, deliver_after=deliver_after
+            )
             hint = await self._maybe_followup_hint(line, request_followup_hint)
             await self.actor.history.summarize_if_needed()
             return line, hint
@@ -242,11 +250,16 @@ class GameDrivenScene(BaseScene):
         return PromptInfo(prompt=compiled, input_args=prompt_input, langfuse_prompt=prompt)
 
     async def _generate_and_deliver(
-        self, prompt_info: PromptInfo, emotions: list[str] | None
+        self,
+        prompt_info: PromptInfo,
+        emotions: list[str] | None,
+        deliver_after: Awaitable | None = None,
     ) -> DialogueLine:
         from digital_actor.stage_context import stage_context
 
         response = await stage_context.llm_acomplete(prompt_info, obs_name="generate_next_line")
+        if deliver_after is not None:
+            await deliver_after
         line = self.actor.history.add_message(self.actor.name, response)
         emotion = line.tags[0] if line.tags else None
         intensity = line.tags[1] if len(line.tags) > 1 else None

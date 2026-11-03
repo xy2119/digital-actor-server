@@ -4,7 +4,9 @@ version = "0.1.0"
 requires-python = ">=3.12,<3.14"
 dependencies = [
     "digital-actor",
-    "tts_lib[local]",
+    # Windows: tts_lib[local] pulls llama-cpp-python (needs MSVC) + CUDA torch.
+    # Use cloud TTS (elevenlabs) for a clean install; switch back when local TTS is needed.
+    "tts_lib",
     "websockets>=14.0",
     "aiohttp>=3.9",
     "python-dotenv>=1.0",
@@ -16,6 +18,8 @@ dependencies = [
     # PyPI's torch 2.12 ships CPU-only on Windows (CUDA is Linux-marker-gated),
     # so without this pin uv picks 2.12+cpu. torch 2.11 pairs with torchaudio 2.11.
     "torch==2.11.0",
+    "numpy>=2.5.1",
+    "sentence-transformers>=5.6.0",
 ]
 
 [dependency-groups]
@@ -31,7 +35,7 @@ explicit = true
 
 [tool.uv.sources]
 digital-actor = { path = "./packages/digital_actor", editable = true }
-tts_lib = { git = "ssh://git@github.com/iconic-games/iconic-python-lib", subdirectory = "packages/tts_lib" }
+tts_lib = { git = "https://github.com/iconic-games/iconic-python-lib", subdirectory = "packages/tts_lib" }
 torch = { index = "pytorch-cu128" }
 torchaudio = { index = "pytorch-cu128" }
 
